@@ -28,8 +28,6 @@ This interactive dashboard provides an in-depth analysis of the Olympics dataset
    ```bash
    git clone https://github.com/AryanSachan12/olympic-analysis.git
    ```
-````
-
 2. Navigate to the project directory:
    ```bash
    cd olympic-analysis
