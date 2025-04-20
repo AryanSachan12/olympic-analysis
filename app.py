@@ -7,15 +7,43 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.figure_factory as ff
 
-df = pd.read_csv("./datasets/athlete_events.csv")
-region_df = pd.read_csv("./datasets/noc_regions.csv")
+st.set_page_config(layout="wide", page_title="🏅 Olympics Analysis Dashboard")
 
-df = preprocessor.preprocess(df, region_df)
+with st.spinner("Loading data..."):
+    df = pd.read_csv("./datasets/athlete_events.csv")
+    region_df = pd.read_csv("./datasets/noc_regions.csv")
+    df = preprocessor.preprocess(df, region_df)
 
-st.sidebar.title("Olympic Analysis")
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .css-18e3th9 {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    .stMetricValue {
+        font-size: 24px;
+        color: #4CAF50;
+    }
+    .stMetricLabel {
+        color: #888;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
+st.sidebar.image(
+    "https://img.icons8.com/color/96/olympic-rings.png", use_container_width=True
+)
+st.sidebar.title("Olympics Dashboard")
 
 user_menu = st.sidebar.radio(
-    "Select an Option",
+    "📊 Select an Option",
     (
         "Medal Tally",
         "Overall Analysis",
@@ -25,135 +53,106 @@ user_menu = st.sidebar.radio(
 )
 
 if user_menu == "Medal Tally":
-    st.sidebar.header("Medal Tally")
+    st.sidebar.header("🎖️ Medal Tally")
     years, country = helper.country_year_list(df)
-
     selected_year = st.sidebar.selectbox("Select Year", years)
     selected_country = st.sidebar.selectbox("Select Country", country)
 
     medal_tally = helper.fetch_medal_tally(df, selected_year, selected_country)
 
-    if selected_year == "Overall" and selected_country == "Overall":
-        st.title("Overall Tally")
-    if selected_year != "Overall" and selected_country == "Overall":
-        st.title("Medal Tally in " + str(selected_year) + " Olympics")
-    if selected_year == "Overall" and selected_country != "Overall":
-        st.title(selected_country + " Overall Performance")
-    if selected_year != "Overall" and selected_country != "Overall":
-        st.title(
-            selected_country + " Performance in " + str(selected_year) + " Olympics"
-        )
-
-    st.table(medal_tally)
+    st.title(f"🏆 Medal Tally")
+    subtitle = (
+        f"{selected_country} - {selected_year}"
+        if selected_year != "Overall" or selected_country != "Overall"
+        else "Overall"
+    )
+    st.subheader(f"🔹 {subtitle}")
+    st.dataframe(medal_tally, use_container_width=True)
 
 if user_menu == "Overall Analysis":
-    editions = df["Year"].unique().shape[0] - 1  # No of editions
-    cities = df["City"].unique().shape[0]  # No of cities
-    sports = df["Sport"].unique().shape[0]  # No of sports
-    events = df["Event"].unique().shape[0]  # No of events
-    athletes = df["Name"].unique().shape[0]  # No of athletes
-    regions = df["region"].unique().shape[0]  # No of regions
+    st.title("📈 Overall Analysis")
 
-    st.title("Top Statistics")
+    editions = df["Year"].nunique() - 1
+    cities = df["City"].nunique()
+    sports = df["Sport"].nunique()
+    events = df["Event"].nunique()
+    athletes = df["Name"].nunique()
+    regions = df["region"].nunique()
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.header("Editions")
-        st.title(editions)
-    with col2:
-        st.header("Hosts")
-        st.title(cities)
-    with col3:
-        st.header("Sports")
-        st.title(sports)
+    with st.container():
+        st.subheader("Key Statistics")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Editions", editions)
+        col2.metric("Host Cities", cities)
+        col3.metric("Total Sports", sports)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.header("Events")
-        st.title(events)
-    with col2:
-        st.header("Regions")
-        st.title(regions)
-    with col3:
-        st.header("Athletes")
-        st.title(athletes)
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Events", events)
+        col2.metric("Participating Nations", regions)
+        col3.metric("Athletes", athletes)
 
-    # No. of nations over time
-    nations_over_time = helper.data_over_time(df, "region")
+    st.markdown("---")
 
-    fig = px.line(nations_over_time, x="Edition", y="region")
-    st.title("Participating Nations over the Years")
-    st.plotly_chart(fig)
+    with st.expander("📌 Participation Trends Over Time"):
+        col1, col2 = st.columns(2)
+        with col1:
+            nations = helper.data_over_time(df, "region")
+            fig = px.line(nations, x="Edition", y="region", title="Nations Over Time")
+            st.plotly_chart(fig, use_container_width=True)
 
-    # No. of events over time
-    events_over_time = helper.data_over_time(df, "Event")
+            athletes = helper.data_over_time(df, "Name")
+            fig = px.line(athletes, x="Edition", y="Name", title="Athletes Over Time")
+            st.plotly_chart(fig, use_container_width=True)
 
-    fig = px.line(events_over_time, x="Edition", y="Event")
-    st.title("Events over the Years")
-    st.plotly_chart(fig)
+        with col2:
+            events = helper.data_over_time(df, "Event")
+            fig = px.line(events, x="Edition", y="Event", title="Events Over Time")
+            st.plotly_chart(fig, use_container_width=True)
 
-    # No. of athletes over time
-    athletes_over_time = helper.data_over_time(df, "Name")
-
-    fig = px.line(athletes_over_time, x="Edition", y="Name")
-    st.title("Athletes over the Years")
-    st.plotly_chart(fig)
-
-    # No. of events over time (heatmap)
-    st.title("No. of Events over time (Every Sport)")
+    st.markdown("---")
+    st.subheader("📅 Event Distribution Over the Years")
     fig, ax = plt.subplots(figsize=(20, 20))
-
     x = df.drop_duplicates(["Year", "Sport", "Event"])
-    ax = sns.heatmap(
+    data = (
         x.pivot_table(index="Sport", columns="Year", values="Event", aggfunc="count")
         .fillna(0)
-        .astype(int),
-        annot=True,
+        .astype(int)
     )
+    sns.heatmap(data, annot=True, ax=ax, cmap="YlGnBu")
     st.pyplot(fig)
 
-    # Most Successful Athlete
-    st.title("Most Successfull Athlete")
-
-    all_sports = df["Sport"].unique().tolist()
-    all_sports.sort()
+    st.markdown("---")
+    st.subheader("🥇 Most Successful Athletes")
+    all_sports = sorted(df["Sport"].unique().tolist())
     all_sports.insert(0, "Overall")
-
-    selected_sport = st.selectbox("Sport", all_sports)
-    x = helper.most_successful(df, selected_sport)
-    st.table(x)
+    selected_sport = st.selectbox("Select Sport", all_sports)
+    top_athletes = helper.most_successful(df, selected_sport)
+    st.dataframe(top_athletes, use_container_width=True)
 
 if user_menu == "Country-wise Analysis":
-    countries = df["region"].dropna().unique().tolist()
-    countries.sort()
+    st.sidebar.header("🏳️ Country-wise Analysis")
+    countries = sorted(df["region"].dropna().unique().tolist())
+    selected_country = st.sidebar.selectbox("Select Country", countries)
 
-    st.sidebar.title("Country-wise Analysis")
+    st.title(f"📈 {selected_country} Performance")
+    medal_df = helper.year_wise_medal_tally(df, selected_country)
+    fig = px.line(medal_df, x="Year", y="Medal", markers=True)
+    st.plotly_chart(fig, use_container_width=True)
 
-    selected_country = st.sidebar.selectbox("Select country", countries)
-
-    # Year wise medals
-    country_df = helper.year_wise_medal_tally(df, selected_country)
-
-    fig = px.line(country_df, x="Year", y="Medal")
-    st.title(selected_country + " Medal Tally over the Years")
-    st.plotly_chart(fig)
-
-    # Event wise country
+    st.subheader("🎯 Event Heatmap")
     country_event_df = helper.country_event_heatmap(df, selected_country)
-
     fig, ax = plt.subplots(figsize=(20, 20))
-    st.header(selected_country + " Sports Wise Heatmap")
-    ax = sns.heatmap(country_event_df, annot=True)
+    sns.heatmap(country_event_df, annot=True, ax=ax, cmap="coolwarm")
     st.pyplot(fig)
 
-    # Most successful athletes of country
+    st.subheader("🏅 Top 10 Athletes")
     top10_df = helper.most_successful_atheletes_country(df, selected_country)
-    st.title("Top 10 athletes of " + selected_country)
-    st.table(top10_df)
+    st.dataframe(top10_df, use_container_width=True)
 
 if user_menu == "Athlete-wise Analysis":
     athlete_df = df.drop_duplicates(subset=["Name", "region"])
 
+    # Age Distribution
     x1 = athlete_df["Age"].dropna()
     x2 = athlete_df[athlete_df["Medal"] == "Gold"]["Age"].dropna()
     x3 = athlete_df[athlete_df["Medal"] == "Silver"]["Age"].dropna()
@@ -167,9 +166,12 @@ if user_menu == "Athlete-wise Analysis":
     )
     fig.update_layout(autosize=False, width=1000, height=600)
     st.title("Distribution of Age")
-    st.plotly_chart(fig)
+    st.markdown(
+        "This plot shows the age distribution of athletes categorized by medal status."
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-    # Age analysis wrt popular sports
+    # Age analysis with respect to popular sports
     x = []
     name = []
     famous_sports = [
@@ -219,24 +221,38 @@ if user_menu == "Athlete-wise Analysis":
 
     fig = ff.create_distplot(x, name, show_hist=False, show_rug=False)
     fig.update_layout(autosize=False, width=1000, height=600)
-    st.title("Distribution of Age wrt Sports (Gold Medalist)")
-    st.plotly_chart(fig)
+    st.title("Age Distribution by Sport (Gold Medalists)")
+    st.markdown(
+        "This plot displays the age distribution of gold medalists across various popular sports."
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Height vs Weight
+    st.title("Height vs Weight")
+    st.markdown(
+        "This scatter plot visualizes the relationship between athletes' height and weight, segmented by medal and sex."
+    )
 
     sport_list = df["Sport"].unique().tolist()
     sport_list.sort()
     sport_list.insert(0, "Overall")
 
-    st.title("Height Vs Weight")
     selected_sport = st.selectbox("Select a Sport", sport_list)
     temp_df = helper.weight_v_height(df, selected_sport)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
     sns.scatterplot(
         data=temp_df, x="Weight", y="Height", hue="Medal", style="Sex", s=60, ax=ax
     )
+    ax.set_title(f"Height vs Weight for {selected_sport} Athletes")
     st.pyplot(fig)
 
-    st.title("Men Vs Women Participation Over the Years")
+    # Men vs Women Participation Over the Years
+    st.title("Men vs Women Participation Over the Years")
+    st.markdown(
+        "This line chart compares the participation of male and female athletes over the years."
+    )
+
     final = helper.men_vs_women(df)
     fig = px.line(final, x="Year", y=["Male", "Female"])
     fig.update_layout(autosize=False, width=1000, height=600)
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)

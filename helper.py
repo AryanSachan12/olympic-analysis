@@ -147,7 +147,6 @@ def most_successful_atheletes_country(df, country):
 def weight_v_height(df, sport):
     athlete_df = df.drop_duplicates(subset=["Name", "region"])
     athlete_df["Medal"].fillna("No Medal", inplace=True)
-    
     if sport != "Overall":
         temp_df = athlete_df[athlete_df["Sport"] == sport]
         return temp_df
