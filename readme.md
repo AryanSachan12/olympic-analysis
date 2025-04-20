@@ -1,9 +1,8 @@
-Below is the entire `README.md` file content in one continuous block. Simply copy everything from the code block below and paste it into your `README.md` file:
-
-````markdown
 # 🏅 Olympics Analysis Dashboard
 
 This interactive dashboard provides an in-depth analysis of the Olympics dataset, offering insights into medal tallies, athlete statistics, country-wise performance, and trends over time. Built with **Streamlit**, it serves as a comprehensive tool for exploring Olympics data visually and interactively.
+
+[LIVE DEMO](https://aryansachan12-olympic-analysis-app-iykjpl.streamlit.app/)
 
 ## Features
 
@@ -118,5 +117,3 @@ Special thanks to:
 - The open-source community for tools like Streamlit, Plotly, Seaborn, and Matplotlib.
 
 > "Let the data tell the story of the world's greatest sporting event!" 🎉
-
-```
